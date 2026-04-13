@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>숨겨진 차원</title>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            background-color: #050505; /* 아주 어두운 배경 */
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Pretendard', -apple-system, sans-serif;
+            overflow: hidden;
+            position: relative;
+            cursor: crosshair; /* 마우스 커서를 조준선 모양으로 변경 */
+        }
+
+        /* 숨겨진 메인 텍스트 (그라데이션 효과) */
+        h1 {
+            font-size: 3.5rem;
+            text-align: center;
+            background: linear-gradient(45deg, #ff00cc, #3333ff, #00e5ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            z-index: 1;
+            line-height: 1.2;
+            margin: 0;
+        }
+
+        .subtitle {
+            margin-top: 20px;
+            color: #888;
+            font-size: 1.1rem;
+            letter-spacing: 2px;
+            z-index: 1;
+        }
+
+        /* 🔦 핵심: 손전등 효과를 내는 검은색 오버레이 막 */
+        .spotlight {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            /* 마우스 좌표(--x, --y)를 중심으로 투명한 원을 만들고 나머지는 까맣게 칠함 */
+            background: radial-gradient(
+                circle 150px at var(--x, 50vw) var(--y, 50vh), 
+                transparent 0%, 
+                rgba(5, 5, 5, 0.98) 80%
+            );
+            z-index: 2;
+            pointer-events: none; /* 오버레이가 마우스 클릭을 막지 않도록 설정 */
+        }
+    </style>
+</head>
+<body>
+    <h1>당신은 방금<br>숨겨진 공간을 발견했습니다.</h1>
+    <div class="subtitle">어둠 속을 탐색해 보세요.</div>
+    
+    <div class="spotlight"></div>
+
+    <script>
+        // 마우스가 움직일 때마다 손전등 레이어의 중심 좌표를 마우스 위치로 업데이트
+        const spotlight = document.querySelector('.spotlight');
+        
+        document.addEventListener('mousemove', (e) => {
+            spotlight.style.setProperty('--x', `${e.clientX}px`);
+            spotlight.style.setProperty('--y', `${e.clientY}px`);
+        });
+
+        // 터치스크린(모바일) 지원
+        document.addEventListener('touchmove', (e) => {
+            spotlight.style.setProperty('--x', `${e.touches[0].clientX}px`);
+            spotlight.style.setProperty('--y', `${e.touches[0].clientY}px`);
+        });
+    </script>
+</body>
+</html>
