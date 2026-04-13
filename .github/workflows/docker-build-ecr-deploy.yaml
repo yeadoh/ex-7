@@ -1,0 +1,54 @@
+name: ECR과 SSM을 이용한 프라이빗 EC2 배포
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  build-and-deploy:
+    name: ECR, SSM을 이용한 빌드 및 배포
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 깃허브 러너(일꾼) 호출
+        uses: actions/checkout@v4
+
+      - name: 자격 증명 설정
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: ECR 로그인
+        id: login-ecr # ECR Registry에 로그인하여 도커 이미지를 Push 할 수 있도록 설정
+        uses: aws-actions/amazon-ecr-login@v2
+      
+      # 사용자 계정으로 진행함, 필요시 권한 설정
+      - name: 이미지 빌드 및 ECR Puch
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+          IMAGE_TAG: ${{ secrets.IMAGE_TAG }}
+        run: |
+          # 도커 이미지 빌드
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          # 도커 이미지 ECR에 Push
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+      - name: SSM과 ECR을 이용한 배포
+        run: |
+          IMAGE_URL="${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY }}:${{ secrets.IMAGE_TAG }}"
+          # SSM을 사용해 EC2 인스턴스에 명령 실행
+          aws ssm send-command \
+            --instance-ids "${{ secrets.INSTANCE_ID}}" \
+            --document-name "AWS-RunShellScript" \
+            --comment "Deploy Docker image from" \
+            --parameters 'commands=[
+              "aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | sudo docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}",
+              "sudo docker pull $IMAGE_URL",
+              "sudo docker stop nginx-container || true",
+              "sudo docker rm nginx-container || true",
+              "sudo docker run -d --name nginx-container -p 80:80 $IMAGE_URL"              
+            ]' \
+            --region ${{secrets.AWS_REGION}}
