@@ -41,7 +41,7 @@ jobs:
           IMAGE_URL="${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY }}:${{ secrets.IMAGE_TAG }}"
           # SSM을 사용해 EC2 인스턴스에 명령 실행
           aws ssm send-command \
-            --ec2-instance-ids "${{ secrets.EC2_INSTANCE_ID}}" \
+            --instance-ids "${{ secrets.INSTANCE_ID}}" \
             --document-name "AWS-RunShellScript" \
             --comment "Deploy Docker image from" \
             --parameters 'commands=[
